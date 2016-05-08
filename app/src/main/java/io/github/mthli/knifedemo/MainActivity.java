@@ -2,10 +2,16 @@ package io.github.mthli.knifedemo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,13 +20,25 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import io.github.mthli.knife.KnifeParser;
 import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
     private static final String BOLD = "<b>Bold</b><br><br>";
     private static final String ITALIT = "<i>Italic</i><br><br>";
     private static final String UNDERLINE = "<u>Underline</u><br><br>";
-    private static final String STRIKETHROUGH = "<s>Strikethrough</s><br><br>"; // <s> or <strike> or <del>
+    private static final String STRIKETHROUGH = "<s>Strikethroug</s><br><br>"; // <s> or <strike> or <del>
     private static final String BULLET = "<ul><li>asdfg</li></ul>";
     private static final String QUOTE = "<blockquote>Quote</blockquote>";
     private static final String LINK = "<a href=\"https://github.com/mthli/Knife\">Link</a><br><br>";
@@ -38,6 +56,7 @@ public class MainActivity extends Activity {
         knife.fromHtml(EXAMPLE);
         knife.setSelection(knife.getEditableText().length());
 
+        initImageLoader(this);
         setupBold();
         setupItalic();
         setupUnderline();
@@ -46,6 +65,7 @@ public class MainActivity extends Activity {
         setupQuote();
         setupLink();
         setupClear();
+        setupInsertImage();
     }
 
     private void setupBold() {
@@ -201,6 +221,26 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void setupInsertImage() {
+        ImageButton insertImage = (ImageButton) findViewById(R.id.inert_image);
+
+        insertImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                knife.clearFormats();
+                gallery();
+            }
+        });
+
+        insertImage.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "insert image", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+    }
+
     private void showLinkDialog() {
         final int start = knife.getSelectionStart();
         final int end = knife.getSelectionEnd();
@@ -251,14 +291,114 @@ public class MainActivity extends Activity {
             case R.id.redo:
                 knife.redo();
                 break;
-            case R.id.github:
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.app_repo)));
-                startActivity(intent);
+            case R.id.view_html:
+                Toast.makeText(this, KnifeParser.toHtml(knife.getText()),Toast.LENGTH_LONG).show();
                 break;
             default:
                 break;
         }
 
         return true;
+    }
+
+    /**
+     * 工具栏添加图片的逻辑
+     */
+    public void gallery() {
+        // 调用系统图库
+        // Intent getImg = new Intent(Intent.ACTION_GET_CONTENT);
+        // getImg.addCategory(Intent.CATEGORY_OPENABLE);
+        // getImg.setType("image/*");
+        Intent getImg = new Intent(Intent.ACTION_PICK,
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(getImg, 1001);
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case 1001: {
+                    // 添加图片
+                    Bitmap originalBitmap;
+                    Uri originalUri = data.getData();
+                    try {
+                        Cursor cursor = getContentResolver().query(originalUri,
+                                null, null, null, null);
+                        cursor.moveToFirst();
+                        long fileSize = cursor.getLong(cursor.getColumnIndex(OpenableColumns.SIZE));
+                        String fileName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                        cursor.close();
+//                        long fileSize = file.length();
+                        System.out.println(fileSize);
+                        if (fileSize > 5 * 1024 * 1024 ) {
+                            Toast.makeText(this, "图片不能大于5MB", Toast.LENGTH_SHORT).show();
+                            break;
+                        } else if (fileSize <= 0) {
+                            Toast.makeText(this, "图片错误", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                        originalBitmap = ImageLoader.getInstance().loadImageSync(
+                                originalUri.toString());
+
+                        if (originalBitmap!= null) {
+                            knife.addImage(originalBitmap,fileName,"返回来的url");
+                        } else {
+                            Toast.makeText(this, "获取图片失败", Toast.LENGTH_LONG).show();
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }finally {
+                    }
+
+
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取指定uri的本地绝对路径
+     *
+     * @param uri
+     * @return
+     */
+    protected String getAbsoluteImagePath(Uri uri) {
+        // can post image
+        String[] proj = { MediaStore.MediaColumns.DATA };
+        Cursor cursor = managedQuery(uri, proj, // Which columns to return
+                null, // WHERE clause; which rows to return (all rows)
+                null, // WHERE clause selection arguments (none)
+                null); // Order-by clause (ascending by name)
+
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
+        cursor.moveToFirst();
+
+        return cursor.getString(column_index);
+    }
+
+    public void initImageLoader(Context context) {
+        // This configuration tuning is custom. You can tune every option, you
+        // may tune some of them,
+        // or you can create default configuration by
+        // ImageLoaderConfiguration.createDefault(this);
+        // method.
+        ImageLoaderConfiguration.Builder config = new ImageLoaderConfiguration.Builder(
+                context);
+        config.threadPriority(Thread.NORM_PRIORITY - 2);
+        config.denyCacheImageMultipleSizesInMemory();
+        config.diskCacheFileNameGenerator(new Md5FileNameGenerator());
+        config.diskCacheSize(50 * 1024 * 1024); // 50 MiB
+        config.tasksProcessingOrder(QueueProcessingType.LIFO);
+        config.writeDebugLogs(); // Remove for release app
+
+        // Initialize ImageLoader with configuration.
+        ImageLoader.getInstance().init(config.build());
+
     }
 }

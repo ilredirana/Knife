@@ -23,7 +23,6 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.BulletSpan;
 import android.text.style.CharacterStyle;
-import android.text.style.ImageSpan;
 import android.text.style.ParagraphStyle;
 import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
@@ -32,8 +31,8 @@ import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 
 public class KnifeParser {
-    public static Spanned fromHtml(String source) {
-        return Html.fromHtml(source, null, new KnifeTagHandler());
+    public static Spanned fromHtml(String source,UrlImageGetter urlImageGetter) {
+        return Html.fromHtml(source, urlImageGetter, new KnifeTagHandler());
     }
 
     public static String toHtml(Spanned text) {
@@ -180,10 +179,10 @@ public class KnifeParser {
                     out.append("\">");
                 }
 
-                if (spans[j] instanceof ImageSpan) {
+                if (spans[j] instanceof UrlImageSpan) {
                     out.append("<img src=\"");
-                    out.append(((ImageSpan) spans[j]).getSource());
-                    out.append("\">");
+                    out.append(((UrlImageSpan) spans[j]).getUrl());
+                    out.append("\" style=\"max-width:100%\" >");
 
                     // Don't output the dummy character underlying the image.
                     i = next;
@@ -227,33 +226,34 @@ public class KnifeParser {
         for (int i = start; i < end; i++) {
             char c = text.charAt(i);
 
-            if (c == '<') {
-                out.append("&lt;");
-            } else if (c == '>') {
-                out.append("&gt;");
-            } else if (c == '&') {
-                out.append("&amp;");
-            } else if (c >= 0xD800 && c <= 0xDFFF) {
-                if (c < 0xDC00 && i + 1 < end) {
-                    char d = text.charAt(i + 1);
-                    if (d >= 0xDC00 && d <= 0xDFFF) {
-                        i++;
-                        int codepoint = 0x010000 | (int) c - 0xD800 << 10 | (int) d - 0xDC00;
-                        out.append("&#").append(codepoint).append(";");
-                    }
-                }
-            } else if (c > 0x7E || c < ' ') {
-                out.append("&#").append((int) c).append(";");
-            } else if (c == ' ') {
-                while (i + 1 < end && text.charAt(i + 1) == ' ') {
-                    out.append("&nbsp;");
-                    i++;
-                }
-
-                out.append(' ');
-            } else {
-                out.append(c);
-            }
+            out.append(c);
+//            if (c == '<') {
+//                out.append("&lt;");
+//            } else if (c == '>') {
+//                out.append("&gt;");
+//            } else if (c == '&') {
+//                out.append("&amp;");
+//            } else if (c >= 0xD800 && c <= 0xDFFF) {
+//                if (c < 0xDC00 && i + 1 < end) {
+//                    char d = text.charAt(i + 1);
+//                    if (d >= 0xDC00 && d <= 0xDFFF) {
+//                        i++;
+//                        int codepoint = 0x010000 | (int) c - 0xD800 << 10 | (int) d - 0xDC00;
+//                        out.append("&#").append(codepoint).append(";");
+//                    }
+//                }
+//            } else if (c > 0x7E || c < ' ') {
+//                out.append("&#").append((int) c).append(";");
+//            } else if (c == ' ') {
+//                while (i + 1 < end && text.charAt(i + 1) == ' ') {
+//                    out.append("&nbsp;");
+//                    i++;
+//                }
+//
+//                out.append(' ');
+//            } else {
+//                out.append(c);
+//            }
         }
     }
 

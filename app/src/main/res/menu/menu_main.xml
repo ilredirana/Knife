@@ -14,9 +14,9 @@
           android:showAsAction="ifRoom">
     </item>
 
-    <item android:id="@+id/github"
-          android:title="@string/menu_github"
-          android:showAsAction="collapseActionView">
+    <item android:id="@+id/view_html"
+          android:title="@string/menu_view_html"
+          android:showAsAction="ifRoom">
     </item>
 
 </menu>

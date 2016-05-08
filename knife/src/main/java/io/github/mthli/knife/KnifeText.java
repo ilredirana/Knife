@@ -18,8 +18,12 @@ package io.github.mthli.knife;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -31,6 +35,7 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
@@ -64,14 +69,17 @@ public class KnifeText extends EditText implements TextWatcher {
 
     private SpannableStringBuilder inputBefore;
     private Editable inputLast;
+    private Context mContext;
 
     public KnifeText(Context context) {
         super(context);
+        mContext = context;
         init(null);
     }
 
     public KnifeText(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mContext = context;
         init(attrs);
     }
 
@@ -836,7 +844,7 @@ public class KnifeText extends EditText implements TextWatcher {
 
     public void fromHtml(String source) {
         SpannableStringBuilder builder = new SpannableStringBuilder();
-        builder.append(KnifeParser.fromHtml(source));
+        builder.append(KnifeParser.fromHtml(source,new UrlImageGetter(this,mContext)));
         switchToKnifeStyle(builder, 0, builder.length());
         setText(builder);
     }
@@ -871,5 +879,123 @@ public class KnifeText extends EditText implements TextWatcher {
             editable.removeSpan(span);
             editable.setSpan(new KnifeURLSpan(span.getURL(), linkColor, linkUnderline), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+    }
+
+    /**
+     * 添加一个图片
+     *
+     * @param bitmap
+     * @param fileName
+     */
+    public void addImage(Bitmap bitmap, String fileName, String returnedUrl) {
+        Log.i("addImage1---", fileName);
+        String pathTag = "<img src=\"" + fileName + "\"/>";
+        SpannableString spanString = new SpannableString(pathTag);
+        // 获取屏幕的宽高
+        int paddingLeft = getPaddingLeft();
+        int paddingRight = getPaddingRight();
+        int bmWidth = bitmap.getWidth();//图片高度
+        int bmHeight = bitmap.getHeight();//图片宽度
+        int zoomWidth =  getWidth() - (paddingLeft + paddingRight);
+        int zoomHeight = (int) (((float)zoomWidth / (float)bmWidth) * bmHeight);
+        if (zoomHeight>getHeight()/2){
+            zoomHeight /= 2;
+            zoomWidth /= 2;
+        }
+        Bitmap newBitmap = zoomImage(bitmap, zoomWidth,zoomHeight);
+        UrlImageSpan imgSpan = new UrlImageSpan(mContext, newBitmap);
+        imgSpan.setUrl(returnedUrl);
+        spanString.setSpan(imgSpan, 0, pathTag.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Editable editable = this.getText(); // 获取edittext内容
+        int start = this.getSelectionStart(); // 设置欲添加的位置
+        Log.d("EDITABLE:", start+"...."+KnifeParser.toHtml(editable));
+        editable.insert(start, spanString); // 设置spanString要添加的位置
+        editable.append("\n\n");
+        this.setSelection(start+spanString.length()+2);
+        this.setText(editable);
+        this.setSelection(start, spanString.length());
+        editable.clear();
+    }
+    /**
+     *
+     * @param bitmap
+     * @param filePath
+     * @param start
+     * @param end
+     */
+    public void addImage(Bitmap bitmap, String filePath,int start,int end) {
+        Log.i("addImage2--", filePath);
+        String pathTag = "<img src=\"" + filePath + "\"/>";
+        SpannableString spanString = new SpannableString(pathTag);
+        // 获取屏幕的宽高
+        int paddingLeft = getPaddingLeft();
+        int paddingRight = getPaddingRight();
+        int bmWidth = bitmap.getWidth();//图片高度
+        int bmHeight = bitmap.getHeight();//图片宽度
+        int zoomWidth =  getWidth() - (paddingLeft + paddingRight);
+        int zoomHeight = (int) (((float)zoomWidth / (float)bmWidth) * bmHeight);
+        Bitmap newBitmap = zoomImage(bitmap, zoomWidth,zoomHeight);
+        UrlImageSpan imgSpan = new UrlImageSpan(mContext, newBitmap);
+        spanString.setSpan(imgSpan, 0, pathTag.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Editable editable = this.getText(); // 获取edittext内容
+        editable.delete(start, end);//删除
+        editable.insert(start, spanString); // 设置spanString要添加的位置
+    }
+    /**
+     *
+     * @param filePath
+     * @param start
+     * @param end
+     */
+    public void addDefaultImage(String filePath,int start,int end) {
+        Log.i("addDefaultImage---", filePath);
+        String pathTag = "<img src=\"" + filePath + "\"/>";
+        SpannableString spanString = new SpannableString(pathTag);
+        // 获取屏幕的宽高
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.default_img);
+        int paddingLeft = getPaddingLeft();
+        int paddingRight = getPaddingRight();
+        int bmWidth = bitmap.getWidth();//图片高度
+        int bmHeight = bitmap.getHeight();//图片宽度
+        int zoomWidth = getWidth() - (paddingLeft + paddingRight);
+        int zoomHeight = (int) (((float)zoomWidth / (float)bmWidth) * bmHeight);
+        Bitmap newBitmap = zoomImage(bitmap, zoomWidth,zoomHeight);
+        UrlImageSpan imgSpan = new UrlImageSpan(mContext, newBitmap);
+        spanString.setSpan(imgSpan, 0, pathTag.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Editable editable = this.getText(); // 获取edittext内容
+        editable.delete(start, end);//删除
+        editable.insert(start, spanString); // 设置spanString要添加的位置
+    }
+
+    /**
+     * 对图片进行缩放
+     * @param bgimage
+     * @param newWidth
+     * @param newHeight
+     * @return
+     */
+    private Bitmap zoomImage(Bitmap bgimage, double newWidth, double newHeight) {
+        // 获取这个图片的宽和高
+        float width = bgimage.getWidth();
+        float height = bgimage.getHeight();
+        //如果宽度为0 保持原图
+        if(newWidth == 0){
+            newWidth = width;
+            newHeight = height;
+        }
+        // 创建操作图片用的matrix对象
+        Matrix matrix = new Matrix();
+        // 计算宽高缩放率
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // 缩放图片动作
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap bitmap = Bitmap.createBitmap(bgimage, 0, 0, (int) width,
+                (int) height, matrix, true);
+        bgimage.recycle();
+        return bitmap;
     }
 }
