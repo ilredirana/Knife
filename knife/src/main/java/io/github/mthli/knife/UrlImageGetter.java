@@ -10,35 +10,37 @@ import android.text.Html;
 import android.view.View;
 import android.widget.TextView;
 
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
-/**
- * 当前类注释: UrlImageGetter 加载网络图片
- * 项目名：FastDevTest
- * 包名：com.jwenfeng.fastdev.view.htmltextview
- * 作者：jinwenfeng on 16/1/27 11:19
- * 邮箱：823546371@qq.com
- * QQ： 823546371
- * 公司：南京穆尊信息科技有限公司
- * © 2016 jinwenfeng
- * ©版权所有，未经允许不得传播
- */
 public class UrlImageGetter implements Html.ImageGetter {
 
     Context c;
     TextView container;
     int width ;
 
-    /**
-     *
-     * @param t
-     * @param c
-     */
+    private void init() {
+        ImageLoaderConfiguration.Builder config = new ImageLoaderConfiguration.Builder(
+                 c);
+        config.threadPriority(Thread.NORM_PRIORITY - 2);
+        config.denyCacheImageMultipleSizesInMemory();
+        config.diskCacheFileNameGenerator(new Md5FileNameGenerator());
+        config.diskCacheSize(50 * 1024 * 1024); // 50 MiB
+        config.tasksProcessingOrder(QueueProcessingType.LIFO);
+        config.writeDebugLogs(); // Remove for release app
+
+        // Initialize ImageLoader with configuration.
+        ImageLoader.getInstance().init(config.build());
+    }
+
     public UrlImageGetter(TextView t, Context c) {
         this.c = c;
         this.container = t;
         width = c.getResources().getDisplayMetrics().widthPixels;
+        init();
     }
 
     @Override

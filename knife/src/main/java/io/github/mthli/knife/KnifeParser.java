@@ -19,16 +19,23 @@ package io.github.mthli.knife;
 
 import android.graphics.Typeface;
 import android.text.Html;
+import android.text.Layout;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.AlignmentSpan;
 import android.text.style.BulletSpan;
 import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.ImageSpan;
 import android.text.style.ParagraphStyle;
 import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TextAppearanceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Log;
 
 public class KnifeParser {
     public static Spanned fromHtml(String source,UrlImageGetter urlImageGetter) {
@@ -45,9 +52,11 @@ public class KnifeParser {
         int next;
 
         for (int i = 0; i < text.length(); i = next) {
+
             next = text.nextSpanTransition(i, text.length(), ParagraphStyle.class);
 
             ParagraphStyle[] styles = text.getSpans(i, next, ParagraphStyle.class);
+            Log.e("LENGTH",styles.length+"");
             if (styles.length == 2) {
                 if (styles[0] instanceof BulletSpan && styles[1] instanceof QuoteSpan) {
                     // Let a <br> follow the BulletSpan or QuoteSpan end, so next++
@@ -62,7 +71,9 @@ public class KnifeParser {
                     withinBullet(out, text, i, next++);
                 } else if (styles[0] instanceof QuoteSpan) {
                     withinQuote(out, text, i, next++);
-                } else {
+                }else if (styles[0] instanceof AlignmentSpan) {
+                    withinAlignment(out, text, i, next++);
+                }else {
                     withinContent(out, text, i, next);
                 }
             } else {
@@ -123,6 +134,28 @@ public class KnifeParser {
         }
     }
 
+    private static void withinAlignment(StringBuilder out, Spanned text, int start, int end) {
+        int next;
+
+        for (int i = start; i < end; i = next) {
+            next = text.nextSpanTransition(i, end, AlignmentSpan.class);
+
+            AlignmentSpan[] quotes = text.getSpans(i, next, AlignmentSpan.class);
+            for (AlignmentSpan quote : quotes) {
+                out.append("<div align=\"");
+                if (quote.getAlignment().equals(Layout.Alignment.ALIGN_CENTER))
+                    out.append("center");
+                if (quote.getAlignment().equals(Layout.Alignment.ALIGN_NORMAL))
+                    out.append("left");
+                out.append("\"><p>");
+            }
+            withinContent(out, text, i, next);
+            for (AlignmentSpan quote : quotes) {
+                out.append("</p></div>");
+            }
+        }
+    }
+
     private static void withinContent(StringBuilder out, Spanned text, int start, int end) {
         int next;
 
@@ -146,12 +179,12 @@ public class KnifeParser {
     // remove some tag because we don't need them in Knife.
     private static void withinParagraph(StringBuilder out, Spanned text, int start, int end, int nl) {
         int next;
-
         for (int i = start; i < end; i = next) {
             next = text.nextSpanTransition(i, end, CharacterStyle.class);
 
             CharacterStyle[] spans = text.getSpans(i, next, CharacterStyle.class);
             for (int j = 0; j < spans.length; j++) {
+
                 if (spans[j] instanceof StyleSpan) {
                     int style = ((StyleSpan) spans[j]).getStyle();
 
@@ -162,10 +195,17 @@ public class KnifeParser {
                     if ((style & Typeface.ITALIC) != 0) {
                         out.append("<i>");
                     }
+
                 }
 
                 if (spans[j] instanceof UnderlineSpan) {
                     out.append("<u>");
+                }
+
+                if (spans[j] instanceof TextAppearanceSpan) {
+                    TextAppearanceSpan span = ((TextAppearanceSpan) spans[j]);
+                    Log.e("APPEARENCE",span.getFamily()+span.getTextColor()+span.getTextSize()+span.getTextStyle());
+//                    out.append("<u>");
                 }
 
                 // Use standard strikethrough tag <del> rather than <s> or <strike>
@@ -186,6 +226,30 @@ public class KnifeParser {
 
                     // Don't output the dummy character underlying the image.
                     i = next;
+                }else if (spans[j] instanceof ImageSpan) {
+                    Log.e("IMAGE","aaaaa");
+                    out.append("<img src=\"");
+                    ImageSpan imageSpan = (ImageSpan)spans[j];
+                    String source = imageSpan.getSource();
+                    out.append(source);
+                    out.append("\" style=\"max-width:100%\" >");
+                    // Don't output the dummy character underlying the image.
+                    i = next;
+                }
+                if (spans[j] instanceof AbsoluteSizeSpan) {
+                    out.append("<font size =\"");
+                    out.append(((AbsoluteSizeSpan) spans[j]).getSize() / 6);
+                    out.append("\">");
+                }
+                if (spans[j] instanceof ForegroundColorSpan) {
+                    out.append("<font color =\"#");
+                    String color = Integer.toHexString(((ForegroundColorSpan) spans[j]).getForegroundColor() + 0x01000000);
+
+                    while (color.length() < 6) {
+                        color = "0" + color;
+                    }
+                    out.append(color);
+                    out.append("\">");
                 }
             }
 
@@ -214,6 +278,12 @@ public class KnifeParser {
                         out.append("</i>");
                     }
                 }
+                if (spans[j] instanceof ForegroundColorSpan) {
+                    out.append("</font>");
+                }
+                if (spans[j] instanceof AbsoluteSizeSpan) {
+                    out.append("</font>");
+                }
             }
         }
 
@@ -227,33 +297,6 @@ public class KnifeParser {
             char c = text.charAt(i);
 
             out.append(c);
-//            if (c == '<') {
-//                out.append("&lt;");
-//            } else if (c == '>') {
-//                out.append("&gt;");
-//            } else if (c == '&') {
-//                out.append("&amp;");
-//            } else if (c >= 0xD800 && c <= 0xDFFF) {
-//                if (c < 0xDC00 && i + 1 < end) {
-//                    char d = text.charAt(i + 1);
-//                    if (d >= 0xDC00 && d <= 0xDFFF) {
-//                        i++;
-//                        int codepoint = 0x010000 | (int) c - 0xD800 << 10 | (int) d - 0xDC00;
-//                        out.append("&#").append(codepoint).append(";");
-//                    }
-//                }
-//            } else if (c > 0x7E || c < ' ') {
-//                out.append("&#").append((int) c).append(";");
-//            } else if (c == ' ') {
-//                while (i + 1 < end && text.charAt(i + 1) == ' ') {
-//                    out.append("&nbsp;");
-//                    i++;
-//                }
-//
-//                out.append(' ');
-//            } else {
-//                out.append(c);
-//            }
         }
     }
 

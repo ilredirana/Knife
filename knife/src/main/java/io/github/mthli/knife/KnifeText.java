@@ -23,15 +23,18 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.AlignmentSpan;
 import android.text.style.BulletSpan;
 import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TextAppearanceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
@@ -241,6 +244,59 @@ public class KnifeText extends EditText implements TextWatcher {
         }
     }
 
+    // TextAppearanceSpan ===============================================================================
+
+    public void appearance(boolean valid) {
+        if (valid) {
+//            underlineValid(getSelectionStart(), getSelectionEnd());
+        } else {
+//            underlineInvalid(getSelectionStart(), getSelectionEnd());
+        }
+    }
+
+    protected void appearanceValid(int appearance, int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        getEditableText().setSpan(new TextAppearanceSpan(mContext,appearance), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    protected void appearanceInvalid(int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        UnderlineSpan[] spans = getEditableText().getSpans(start, end, UnderlineSpan.class);
+        for (UnderlineSpan span : spans) {
+            getEditableText().removeSpan(span);
+        }
+    }
+
+    protected boolean containAppearance(int start, int end) {
+        if (start > end) {
+            return false;
+        }
+
+        if (start == end) {
+            if (start - 1 < 0 || start + 1 > getEditableText().length()) {
+                return false;
+            } else {
+                UnderlineSpan[] before = getEditableText().getSpans(start - 1, start, UnderlineSpan.class);
+                UnderlineSpan[] after = getEditableText().getSpans(start, start + 1, UnderlineSpan.class);
+                return before.length > 0 && after.length > 0;
+            }
+        } else {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = start; i < end; i++) {
+                if (getEditableText().getSpans(i, i + 1, UnderlineSpan.class).length > 0) {
+                    builder.append(getEditableText().subSequence(i, i + 1).toString());
+                }
+            }
+
+            return getEditableText().subSequence(start, end).toString().equals(builder.toString());
+        }
+    }
+
     // UnderlineSpan ===============================================================================
 
     public void underline(boolean valid) {
@@ -303,6 +359,69 @@ public class KnifeText extends EditText implements TextWatcher {
 
             for (int i = start; i < end; i++) {
                 if (getEditableText().getSpans(i, i + 1, UnderlineSpan.class).length > 0) {
+                    builder.append(getEditableText().subSequence(i, i + 1).toString());
+                }
+            }
+
+            return getEditableText().subSequence(start, end).toString().equals(builder.toString());
+        }
+    }
+
+
+    // AlignmentSpan ===========================================================================
+
+    public void alignWhere(boolean isCenter) {
+        if (isCenter) {
+            alignmentInvalid(getSelectionStart(), getSelectionEnd());
+            alignCenterValid(getSelectionStart(), getSelectionEnd());
+        } else {
+            alignmentInvalid(getSelectionStart(), getSelectionEnd());
+            alignLeftValid(getSelectionStart(), getSelectionEnd());
+        }
+    }
+
+    protected void alignCenterValid(int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    protected void alignLeftValid(int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    protected void alignmentInvalid(int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        AlignmentSpan[] spans = getEditableText().getSpans(start, end, AlignmentSpan.class);
+        for (AlignmentSpan span : spans) {
+            getEditableText().removeSpan(span);
+        }
+    }
+
+    protected boolean containAlignment(int start, int end) {
+        if (start > end) {
+            return false;
+        }
+
+        if (start == end) {
+            if (start - 1 < 0 || start + 1 > getEditableText().length()) {
+                return false;
+            } else {
+                StrikethroughSpan[] before = getEditableText().getSpans(start - 1, start, StrikethroughSpan.class);
+                StrikethroughSpan[] after = getEditableText().getSpans(start, start + 1, StrikethroughSpan.class);
+                return before.length > 0 && after.length > 0;
+            }
+        } else {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = start; i < end; i++) {
+                if (getEditableText().getSpans(i, i + 1, StrikethroughSpan.class).length > 0) {
                     builder.append(getEditableText().subSequence(i, i + 1).toString());
                 }
             }
@@ -834,6 +953,7 @@ public class KnifeText extends EditText implements TextWatcher {
         clearFocus();
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getWindowToken(), 0);
+//        this.set
     }
 
     public void showSoftInput() {
@@ -911,19 +1031,13 @@ public class KnifeText extends EditText implements TextWatcher {
         int start = this.getSelectionStart(); // 设置欲添加的位置
         Log.d("EDITABLE:", start+"...."+KnifeParser.toHtml(editable));
         editable.insert(start, spanString); // 设置spanString要添加的位置
-        editable.append("\n\n");
-        this.setSelection(start+spanString.length()+2);
+        editable.insert(start + spanString.length(), "\n\n");
+//        this.setSelection(start+spanString.length()+2);
         this.setText(editable);
-        this.setSelection(start, spanString.length());
+        this.setSelection(start+spanString.length()+2);
         editable.clear();
     }
-    /**
-     *
-     * @param bitmap
-     * @param filePath
-     * @param start
-     * @param end
-     */
+
     public void addImage(Bitmap bitmap, String filePath,int start,int end) {
         Log.i("addImage2--", filePath);
         String pathTag = "<img src=\"" + filePath + "\"/>";
@@ -943,12 +1057,7 @@ public class KnifeText extends EditText implements TextWatcher {
         editable.delete(start, end);//删除
         editable.insert(start, spanString); // 设置spanString要添加的位置
     }
-    /**
-     *
-     * @param filePath
-     * @param start
-     * @param end
-     */
+
     public void addDefaultImage(String filePath,int start,int end) {
         Log.i("addDefaultImage---", filePath);
         String pathTag = "<img src=\"" + filePath + "\"/>";
@@ -972,10 +1081,6 @@ public class KnifeText extends EditText implements TextWatcher {
 
     /**
      * 对图片进行缩放
-     * @param bgimage
-     * @param newWidth
-     * @param newHeight
-     * @return
      */
     private Bitmap zoomImage(Bitmap bgimage, double newWidth, double newHeight) {
         // 获取这个图片的宽和高

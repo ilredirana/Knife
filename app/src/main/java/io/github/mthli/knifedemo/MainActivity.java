@@ -9,9 +9,9 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.text.Html;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,16 +25,12 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import io.github.mthli.knife.KnifeParser;
 import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
+    private static final String H1 = "<h1>hhh<font  size=\"14px\" color=\"#00ff00\">fffffff</font>hhhhhh</h1><br><br>";
+    private static final String H5 = "<h5>hhhhhhhhh</h5><br><br>";
     private static final String BOLD = "<b>Bold</b><br><br>";
     private static final String ITALIT = "<i>Italic</i><br><br>";
     private static final String UNDERLINE = "<u>Underline</u><br><br>";
@@ -42,14 +38,19 @@ public class MainActivity extends Activity {
     private static final String BULLET = "<ul><li>asdfg</li></ul>";
     private static final String QUOTE = "<blockquote>Quote</blockquote>";
     private static final String LINK = "<a href=\"https://github.com/mthli/Knife\">Link</a><br><br>";
-    private static final String EXAMPLE = BOLD + ITALIT + UNDERLINE + STRIKETHROUGH + BULLET + QUOTE + LINK;
+    private static final String IMAGE = "<img src=\"http://www.zgjm.org/uploads/allimg/140118/1334551250-0.jpg\"><br><br>";
+    private static final String EXAMPLE = H1 + H5 + BOLD + ITALIT  + IMAGE +  UNDERLINE + STRIKETHROUGH + BULLET + QUOTE + LINK;
+
+//    String e = "<p><u style=\"color: rgb(255, 0, 0);\">aa<strong>\u200Baaa</strong>aaa</u><br></p>";
 
     private KnifeText knife;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_knowledge_editor);
+
+//        String newEXAMPLE = TagReplaceTool.proceed(EXAMPLE);
 
         knife = (KnifeText) findViewById(R.id.knife);
         // ImageGetter coming soon...
@@ -57,6 +58,7 @@ public class MainActivity extends Activity {
         knife.setSelection(knife.getEditableText().length());
 
         initImageLoader(this);
+        setupKeyboard();
         setupBold();
         setupItalic();
         setupUnderline();
@@ -64,8 +66,63 @@ public class MainActivity extends Activity {
         setupBullet();
         setupQuote();
         setupLink();
+        setupAlign();
         setupClear();
         setupInsertImage();
+    }
+
+    private void setupKeyboard() {
+        ImageButton keyboard = (ImageButton) findViewById(R.id.hide_keyboard);
+
+        keyboard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.hideSoftInput();
+            }
+        });
+
+        keyboard.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "隐藏键盘", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+    }
+
+    private void setupAlign() {
+        ImageButton center = (ImageButton) findViewById(R.id.align_center);
+        ImageButton left = (ImageButton) findViewById(R.id.align_left);
+
+        center.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.alignWhere(true);
+            }
+        });
+
+        center.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, R.string.toast_bold, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+
+        left.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.alignWhere(false);
+            }
+        });
+
+        left.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, R.string.toast_bold, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
     }
 
     private void setupBold() {
@@ -208,6 +265,7 @@ public class MainActivity extends Activity {
         clear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                knife.append("\n");
                 knife.clearFormats();
             }
         });
@@ -278,7 +336,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_knowledge_editor, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -292,7 +350,14 @@ public class MainActivity extends Activity {
                 knife.redo();
                 break;
             case R.id.view_html:
-                Toast.makeText(this, KnifeParser.toHtml(knife.getText()),Toast.LENGTH_LONG).show();
+                String preview = KnifeParser.toHtml(knife.getText());
+                Toast.makeText(this, preview,Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(MainActivity.this,WebViewActivity.class);
+                intent.putExtra("preview",preview);
+                startActivity(intent);
+                break;
+            case R.id.view_html2:
+                Toast.makeText(this, Html.toHtml(knife.getText()),Toast.LENGTH_LONG).show();
                 break;
             default:
                 break;
@@ -317,7 +382,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // TODO Auto-generated method stub
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
