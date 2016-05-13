@@ -29,8 +29,8 @@ import io.github.mthli.knife.KnifeParser;
 import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
-    private static final String H1 = "<h1>hhh<font  size=\"14px\" color=\"#00ff00\">fffffff</font>hhhhhh</h1><br><br>";
-    private static final String H5 = "<h5>hhhhhhhhh</h5><br><br>";
+    private static final String H1 = "<big>hhhfffffffhhhhhh</big><br><br>";
+    private static final String H5 = "<small>hhhhhhhhh</small><br><br>";
     private static final String BOLD = "<b>Bold</b><br><br>";
     private static final String ITALIT = "<i>Italic</i><br><br>";
     private static final String UNDERLINE = "<u>Underline</u><br><br>";
@@ -45,12 +45,11 @@ public class MainActivity extends Activity {
 
     private KnifeText knife;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_knowledge_editor);
-
-//        String newEXAMPLE = TagReplaceTool.proceed(EXAMPLE);
+        setContentView(R.layout.activity_main);
 
         knife = (KnifeText) findViewById(R.id.knife);
         // ImageGetter coming soon...
@@ -58,6 +57,7 @@ public class MainActivity extends Activity {
         knife.setSelection(knife.getEditableText().length());
 
         initImageLoader(this);
+        setTextSize();
         setupKeyboard();
         setupBold();
         setupItalic();
@@ -71,9 +71,41 @@ public class MainActivity extends Activity {
         setupInsertImage();
     }
 
-    private void setupKeyboard() {
-        ImageButton keyboard = (ImageButton) findViewById(R.id.hide_keyboard);
+    private void setTextSize(){
+        ImageButton set = (ImageButton) findViewById(R.id.bigger_size);
+        ImageButton clear = (ImageButton) findViewById(R.id.smaller_size);
+        set.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.textSize(1.25f);
+            }
+        });
 
+        set.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "变大1/4", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+        clear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.textSize(0.8f);
+            }
+        });
+
+        clear.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "变小1/4", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+    }
+
+    private void setupKeyboard() {
+        final ImageButton keyboard = (ImageButton) findViewById(R.id.show_or_hide_keyboard);
         keyboard.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -97,7 +129,7 @@ public class MainActivity extends Activity {
         center.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                knife.alignWhere(true);
+                knife.alignCenter(true);
             }
         });
 
@@ -112,7 +144,7 @@ public class MainActivity extends Activity {
         left.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                knife.alignWhere(false);
+                knife.alignCenter(false);
             }
         });
 
@@ -293,7 +325,7 @@ public class MainActivity extends Activity {
         insertImage.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                Toast.makeText(MainActivity.this, "insert image", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "insert ic_insert_image", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -373,7 +405,7 @@ public class MainActivity extends Activity {
         // 调用系统图库
         // Intent getImg = new Intent(Intent.ACTION_GET_CONTENT);
         // getImg.addCategory(Intent.CATEGORY_OPENABLE);
-        // getImg.setType("image/*");
+        // getImg.setType("ic_insert_image/*");
         Intent getImg = new Intent(Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(getImg, 1001);
@@ -433,7 +465,7 @@ public class MainActivity extends Activity {
      * @return
      */
     protected String getAbsoluteImagePath(Uri uri) {
-        // can post image
+        // can post ic_insert_image
         String[] proj = { MediaStore.MediaColumns.DATA };
         Cursor cursor = managedQuery(uri, proj, // Which columns to return
                 null, // WHERE clause; which rows to return (all rows)

@@ -32,6 +32,7 @@ import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
 import android.text.style.BulletSpan;
 import android.text.style.QuoteSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TextAppearanceSpan;
@@ -297,6 +298,43 @@ public class KnifeText extends EditText implements TextWatcher {
         }
     }
 
+    // RelativeSizeSpan ===============================================================================
+
+    public void clearTextSize() {
+        textSizeInvalid(getSelectionStart(), getSelectionEnd());
+    }
+
+    public void textSize(float size){
+        textSizeValid(getSelectionStart(), getSelectionEnd(), size);
+    }
+
+    protected void textSizeValid(int start, int end, float size) {
+        if (start >= end) {
+            return;
+        }
+        RelativeSizeSpan[] spans = getEditableText().getSpans(start, end, RelativeSizeSpan.class);
+        if (spans.length==0){
+            getEditableText().setSpan(new RelativeSizeSpan(size), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return;
+        }
+        RelativeSizeSpan sizeSpan = spans[spans.length-1];
+        if (sizeSpan.getSizeChange()!=size){
+            getEditableText().removeSpan(sizeSpan);
+        }else {
+            getEditableText().setSpan(new RelativeSizeSpan(size), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    protected void textSizeInvalid(int start, int end) {
+        if (start >= end) {
+            return;
+        }
+        RelativeSizeSpan[] spans = getEditableText().getSpans(start, end, RelativeSizeSpan.class);
+        for (RelativeSizeSpan span : spans) {
+            getEditableText().removeSpan(span);
+        }
+    }
+
     // UnderlineSpan ===============================================================================
 
     public void underline(boolean valid) {
@@ -370,28 +408,51 @@ public class KnifeText extends EditText implements TextWatcher {
 
     // AlignmentSpan ===========================================================================
 
-    public void alignWhere(boolean isCenter) {
+    public void alignCenter(boolean isCenter) {
+        int startIndex = this.getSelectionStart();
+        int endIndex = this.getSelectionEnd();
+        String totalText = this.getEditableText().toString();
+        int[] newIndexes = getNewSelectionIndex(totalText,startIndex,endIndex);
         if (isCenter) {
-            alignmentInvalid(getSelectionStart(), getSelectionEnd());
-            alignCenterValid(getSelectionStart(), getSelectionEnd());
+            alignmentInvalid(newIndexes[0], newIndexes[1]);
+            alignCenterValid(newIndexes[0], newIndexes[1]);
         } else {
-            alignmentInvalid(getSelectionStart(), getSelectionEnd());
-            alignLeftValid(getSelectionStart(), getSelectionEnd());
+            alignmentInvalid(newIndexes[0], newIndexes[1]);
+//            alignLeftValid(newIndexes[0], newIndexes[1]);
         }
+    }
+
+    private int[] getNewSelectionIndex(String totalText, int start, int end){
+        int[] newIndexes = new int[]{start,end};
+        while (true){
+            if (start == 0 || totalText.charAt(start-1) == '\n'){
+                newIndexes[0] = start;
+                break;
+            }
+            start--;
+        }
+        while (true){
+            if (end == totalText.length() || totalText.charAt(end) == '\n'){
+                newIndexes[1] = end;
+                break;
+            }
+            end++;
+        }
+        return newIndexes;
     }
 
     protected void alignCenterValid(int start, int end) {
         if (start >= end) {
             return;
         }
-        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER), start, end, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
     }
 
     protected void alignLeftValid(int start, int end) {
         if (start >= end) {
             return;
         }
-        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getEditableText().setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL), start, end, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
     }
 
     protected void alignmentInvalid(int start, int end) {
@@ -401,32 +462,6 @@ public class KnifeText extends EditText implements TextWatcher {
         AlignmentSpan[] spans = getEditableText().getSpans(start, end, AlignmentSpan.class);
         for (AlignmentSpan span : spans) {
             getEditableText().removeSpan(span);
-        }
-    }
-
-    protected boolean containAlignment(int start, int end) {
-        if (start > end) {
-            return false;
-        }
-
-        if (start == end) {
-            if (start - 1 < 0 || start + 1 > getEditableText().length()) {
-                return false;
-            } else {
-                StrikethroughSpan[] before = getEditableText().getSpans(start - 1, start, StrikethroughSpan.class);
-                StrikethroughSpan[] after = getEditableText().getSpans(start, start + 1, StrikethroughSpan.class);
-                return before.length > 0 && after.length > 0;
-            }
-        } else {
-            StringBuilder builder = new StringBuilder();
-
-            for (int i = start; i < end; i++) {
-                if (getEditableText().getSpans(i, i + 1, StrikethroughSpan.class).length > 0) {
-                    builder.append(getEditableText().subSequence(i, i + 1).toString());
-                }
-            }
-
-            return getEditableText().subSequence(start, end).toString().equals(builder.toString());
         }
     }
 
@@ -767,9 +802,9 @@ public class KnifeText extends EditText implements TextWatcher {
 
     // URLSpan =====================================================================================
 
-    public void link(String link) {
-        link(link, getSelectionStart(), getSelectionEnd());
-    }
+//    public void link(String link) {
+//        link(link, getSelectionStart(), getSelectionEnd());
+//    }
 
     // When KnifeText lose focus, use this method
     public void link(String link, int start, int end) {

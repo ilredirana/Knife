@@ -41,7 +41,6 @@ public class KnifeTagHandler implements Html.TagHandler {
 
     @Override
     public void handleTag(boolean opening, String tag, Editable output, XMLReader xmlReader) {
-        Log.d("HANDLE_TAG",opening+","+tag+","+output+","+xmlReader);
         if (opening) {
             if (tag.equalsIgnoreCase(BULLET_LI)) {
                 if (output.length() > 0 && output.charAt(output.length() - 1) != '\n') {

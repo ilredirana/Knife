@@ -30,6 +30,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ParagraphStyle;
 import android.text.style.QuoteSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TextAppearanceSpan;
@@ -56,7 +57,6 @@ public class KnifeParser {
             next = text.nextSpanTransition(i, text.length(), ParagraphStyle.class);
 
             ParagraphStyle[] styles = text.getSpans(i, next, ParagraphStyle.class);
-            Log.e("LENGTH",styles.length+"");
             if (styles.length == 2) {
                 if (styles[0] instanceof BulletSpan && styles[1] instanceof QuoteSpan) {
                     // Let a <br> follow the BulletSpan or QuoteSpan end, so next++
@@ -202,12 +202,18 @@ public class KnifeParser {
                     out.append("<u>");
                 }
 
-                if (spans[j] instanceof TextAppearanceSpan) {
-                    TextAppearanceSpan span = ((TextAppearanceSpan) spans[j]);
-                    Log.e("APPEARENCE",span.getFamily()+span.getTextColor()+span.getTextSize()+span.getTextStyle());
-//                    out.append("<u>");
+                if (spans[j] instanceof AbsoluteSizeSpan){
+                    System.out.println("ABS");
                 }
 
+                if (spans[j] instanceof RelativeSizeSpan){
+                    if (((RelativeSizeSpan)(spans[j])).getSizeChange()==0.8f){
+                        out.append("<small>");
+                    }
+                    if (((RelativeSizeSpan)(spans[j])).getSizeChange()==1.25f){
+                        out.append("<big>");
+                    }
+                }
                 // Use standard strikethrough tag <del> rather than <s> or <strike>
                 if (spans[j] instanceof StrikethroughSpan) {
                     out.append("<del>");
@@ -227,7 +233,6 @@ public class KnifeParser {
                     // Don't output the dummy character underlying the image.
                     i = next;
                 }else if (spans[j] instanceof ImageSpan) {
-                    Log.e("IMAGE","aaaaa");
                     out.append("<img src=\"");
                     ImageSpan imageSpan = (ImageSpan)spans[j];
                     String source = imageSpan.getSource();
@@ -235,11 +240,6 @@ public class KnifeParser {
                     out.append("\" style=\"max-width:100%\" >");
                     // Don't output the dummy character underlying the image.
                     i = next;
-                }
-                if (spans[j] instanceof AbsoluteSizeSpan) {
-                    out.append("<font size =\"");
-                    out.append(((AbsoluteSizeSpan) spans[j]).getSize() / 6);
-                    out.append("\">");
                 }
                 if (spans[j] instanceof ForegroundColorSpan) {
                     out.append("<font color =\"#");
@@ -267,6 +267,15 @@ public class KnifeParser {
                     out.append("</u>");
                 }
 
+                if (spans[j] instanceof RelativeSizeSpan){
+                    if (((RelativeSizeSpan)(spans[j])).getSizeChange()==0.8f){
+                        out.append("</small>");
+                    }
+                    if (((RelativeSizeSpan)(spans[j])).getSizeChange()==1.25f){
+                        out.append("</big>");
+                    }
+                }
+
                 if (spans[j] instanceof StyleSpan) {
                     int style = ((StyleSpan) spans[j]).getStyle();
 
@@ -279,9 +288,6 @@ public class KnifeParser {
                     }
                 }
                 if (spans[j] instanceof ForegroundColorSpan) {
-                    out.append("</font>");
-                }
-                if (spans[j] instanceof AbsoluteSizeSpan) {
                     out.append("</font>");
                 }
             }
