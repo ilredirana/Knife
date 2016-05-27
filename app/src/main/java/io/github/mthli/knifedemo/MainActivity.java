@@ -29,8 +29,8 @@ import io.github.mthli.knife.KnifeParser;
 import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
-    private static final String H1 = "<big>hhhfffffffhhhhhh</big><br><br>";
-    private static final String H5 = "<small>hhhhhhhhh</small><br><br>";
+    private static final String H1 = "<big>Big</big><br><br>";
+    private static final String H5 = "<small>Small</small><br><br>";
     private static final String BOLD = "<b>Bold</b><br><br>";
     private static final String ITALIT = "<i>Italic</i><br><br>";
     private static final String UNDERLINE = "<u>Underline</u><br><br>";
