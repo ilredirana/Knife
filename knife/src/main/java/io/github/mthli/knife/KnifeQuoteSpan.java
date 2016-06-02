@@ -17,6 +17,7 @@
 package io.github.mthli.knife;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Parcel;
 import android.text.Layout;
@@ -68,6 +69,8 @@ public class KnifeQuoteSpan extends QuoteSpan {
         p.setStyle(Paint.Style.FILL);
         p.setColor(quoteColor);
         c.drawRect(x, top, x + dir * quoteGapWidth, bottom, p);
+//        p.setColor(Color.parseColor("#f9f9f9"));
+//        c.drawRect(x + dir * quoteGapWidth, top,x + dir * quoteGapWidth +layout.getWidth() , bottom, p);
 
         p.setStyle(style);
         p.setColor(color);

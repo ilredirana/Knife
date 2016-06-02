@@ -17,6 +17,7 @@
 
 package io.github.mthli.knife;
 
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.Html;
 import android.text.Layout;
@@ -24,6 +25,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.AbsoluteSizeSpan;
 import android.text.style.AlignmentSpan;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.BulletSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
@@ -33,13 +35,12 @@ import android.text.style.QuoteSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.TextAppearanceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Log;
 
 public class KnifeParser {
-    public static Spanned fromHtml(String source,UrlImageGetter urlImageGetter) {
+    public static Spanned fromHtml(String source, UrlImageGetter urlImageGetter) {
         return Html.fromHtml(source, urlImageGetter, new KnifeTagHandler());
     }
 
@@ -72,7 +73,7 @@ public class KnifeParser {
                 } else if (styles[0] instanceof QuoteSpan) {
                     withinQuote(out, text, i, next++);
                 }else if (styles[0] instanceof AlignmentSpan) {
-                    withinAlignment(out, text, i, next++);
+                    withinAlignment(out, text, i, next);
                 }else {
                     withinContent(out, text, i, next);
                 }
@@ -136,22 +137,29 @@ public class KnifeParser {
 
     private static void withinAlignment(StringBuilder out, Spanned text, int start, int end) {
         int next;
-
         for (int i = start; i < end; i = next) {
             next = text.nextSpanTransition(i, end, AlignmentSpan.class);
 
-            AlignmentSpan[] quotes = text.getSpans(i, next, AlignmentSpan.class);
-            for (AlignmentSpan quote : quotes) {
-                out.append("<div align=\"");
-                if (quote.getAlignment().equals(Layout.Alignment.ALIGN_CENTER))
-                    out.append("center");
-                if (quote.getAlignment().equals(Layout.Alignment.ALIGN_NORMAL))
-                    out.append("left");
-                out.append("\"><p>");
+            AlignmentSpan[] spans = text.getSpans(i, next, AlignmentSpan.class);
+            for (AlignmentSpan span : spans) {
+                out.append("<align_");
+                if (span.getAlignment().equals(Layout.Alignment.ALIGN_CENTER))
+                    out.append("center>");
+                else if (span.getAlignment().equals(Layout.Alignment.ALIGN_NORMAL))
+                    out.append("left>");
+                else if (span.getAlignment().equals(Layout.Alignment.ALIGN_OPPOSITE)) {
+                    out.append("right>");
+                }
             }
             withinContent(out, text, i, next);
-            for (AlignmentSpan quote : quotes) {
-                out.append("</p></div>");
+            for (AlignmentSpan span : spans) {
+                out.append("</align_");
+                if (span.getAlignment().equals(Layout.Alignment.ALIGN_CENTER))
+                    out.append("center>");
+                else if (span.getAlignment().equals(Layout.Alignment.ALIGN_NORMAL))
+                    out.append("left>");
+                else if (span.getAlignment().equals(Layout.Alignment.ALIGN_OPPOSITE))
+                    out.append("right>");
             }
         }
     }
@@ -251,6 +259,18 @@ public class KnifeParser {
                     out.append(color);
                     out.append("\">");
                 }
+                if (spans[j] instanceof BackgroundColorSpan) {
+                    if (((BackgroundColorSpan) spans[j]).getBackgroundColor()!= Color.TRANSPARENT){
+                        out.append("<bgcolor_");
+                        String color = Integer.toHexString(((BackgroundColorSpan) spans[j]).getBackgroundColor() + 0x01000000);
+
+                        while (color.length() < 6) {
+                            color = "0" + color;
+                        }
+                        out.append(color);
+                        out.append(">");
+                    }
+                }
             }
 
             withinStyle(out, text, i, next);
@@ -289,6 +309,18 @@ public class KnifeParser {
                 }
                 if (spans[j] instanceof ForegroundColorSpan) {
                     out.append("</font>");
+                }
+                if (spans[j] instanceof BackgroundColorSpan) {
+                    if (((BackgroundColorSpan) spans[j]).getBackgroundColor()!= Color.TRANSPARENT){
+                        out.append("</bgcolor_");
+                        String color = Integer.toHexString(((BackgroundColorSpan) spans[j]).getBackgroundColor() + 0x01000000);
+
+                        while (color.length() < 6) {
+                            color = "0" + color;
+                        }
+                        out.append(color);
+                        out.append(">");
+                    }
                 }
             }
         }

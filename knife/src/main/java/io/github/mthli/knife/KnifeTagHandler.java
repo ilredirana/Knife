@@ -20,13 +20,16 @@
 
 package io.github.mthli.knife;
 
+import android.graphics.Color;
 import android.text.Editable;
 import android.text.Html;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.Spanned;
+import android.text.style.AlignmentSpan;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.BulletSpan;
 import android.text.style.StrikethroughSpan;
-import android.util.Log;
 
 import org.xml.sax.XMLReader;
 
@@ -49,6 +52,37 @@ public class KnifeTagHandler implements Html.TagHandler {
                 start(output, new Li());
             } else if (tag.equalsIgnoreCase(STRIKETHROUGH_S) || tag.equalsIgnoreCase(STRIKETHROUGH_STRIKE) || tag.equalsIgnoreCase(STRIKETHROUGH_DEL)) {
                 start(output, new Strike());
+            }else {
+                if (tag.length()<10){
+                    return;
+                }
+                if (tag.substring(0,8).equalsIgnoreCase("bgcolor_")){
+                    String color = "#"+tag.substring(8,tag.length());
+                    try {
+                        start(output, new BackgroundColorSpan(Color.parseColor(color)));
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }else if (tag.substring(0,6).equalsIgnoreCase("align_")){
+                    String align = tag.substring(6,tag.length());
+                    String out = output.toString();
+                    if (align.equals("left")) {
+                        start(output, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL));
+
+                    } else if (align.equals("center")) {
+                        if (out.length()<1 || out.charAt(out.length() - 1) != '\n')
+                            output.append("\n");
+                        start(output, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER));
+//                            output.append("\n");
+
+                    } else if (align.equals("right")) {
+                        if (out.length()<1 || out.charAt(out.length() - 1) != '\n')
+                            output.append("\n");
+                        start(output, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_OPPOSITE));
+//                            output.append("\n");
+
+                    }
+                }
             }
         } else {
             if (tag.equalsIgnoreCase(BULLET_LI)) {
@@ -58,6 +92,37 @@ public class KnifeTagHandler implements Html.TagHandler {
                 end(output, Li.class, new BulletSpan());
             } else if (tag.equalsIgnoreCase(STRIKETHROUGH_S) || tag.equalsIgnoreCase(STRIKETHROUGH_STRIKE) || tag.equalsIgnoreCase(STRIKETHROUGH_DEL)) {
                 end(output, Strike.class, new StrikethroughSpan());
+            }else {
+                if (tag.length()<10){
+                    return;
+                }
+                if (tag.substring(0,8).equalsIgnoreCase("bgcolor_")){
+                    String color = "#"+tag.substring(8,tag.length());
+                    try {
+                        end(output,BackgroundColorSpan.class, new BackgroundColorSpan(Color.parseColor(color)));
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }else if (tag.substring(0,6).equalsIgnoreCase("align_")){
+                    String align = tag.substring(6,tag.length());
+                    String out = output.toString();
+                    if (align.equals("left")) {
+                        end(output, AlignmentSpan.class, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_NORMAL));
+
+                    } else if (align.equals("center")) {
+                        if (out.length()>0 && out.charAt(out.length() - 1) != '\n')
+                            output.append("\n");
+                        end(output, AlignmentSpan.class, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER));
+//                            output.append("\n");
+
+                    } else if (align.equals("right")) {
+                        if (out.length()<1 || out.charAt(out.length() - 1) != '\n')
+                            output.append("\n");
+                        end(output, AlignmentSpan.class, new AlignmentSpan.Standard(Layout.Alignment.ALIGN_OPPOSITE));
+//                            output.append("\n");
+
+                    }
+                }
             }
         }
     }

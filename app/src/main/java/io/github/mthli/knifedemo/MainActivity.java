@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -29,22 +30,9 @@ import io.github.mthli.knife.KnifeParser;
 import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
-    private static final String H1 = "<big>Big</big><br><br>";
-    private static final String H5 = "<small>Small</small><br><br>";
-    private static final String BOLD = "<b>Bold</b><br><br>";
-    private static final String ITALIT = "<i>Italic</i><br><br>";
-    private static final String UNDERLINE = "<u>Underline</u><br><br>";
-    private static final String STRIKETHROUGH = "<s>Strikethroug</s><br><br>"; // <s> or <strike> or <del>
-    private static final String BULLET = "<ul><li>asdfg</li></ul>";
-    private static final String QUOTE = "<blockquote>Quote</blockquote>";
-    private static final String LINK = "<a href=\"https://github.com/mthli/Knife\">Link</a><br><br>";
-    private static final String IMAGE = "<img src=\"http://www.zgjm.org/uploads/allimg/140118/1334551250-0.jpg\"><br><br>";
-    private static final String EXAMPLE = H1 + H5 + BOLD + ITALIT  + IMAGE +  UNDERLINE + STRIKETHROUGH + BULLET + QUOTE + LINK;
 
-//    String e = "<p><u style=\"color: rgb(255, 0, 0);\">aa<strong>\u200Baaa</strong>aaa</u><br></p>";
-
+String EXAMPLE = "LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>";
     private KnifeText knife;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +57,8 @@ public class MainActivity extends Activity {
         setupAlign();
         setupClear();
         setupInsertImage();
+        setupTextColor();
+        setupBackgroundColor();
     }
 
     private void setTextSize(){
@@ -125,18 +115,19 @@ public class MainActivity extends Activity {
     private void setupAlign() {
         ImageButton center = (ImageButton) findViewById(R.id.align_center);
         ImageButton left = (ImageButton) findViewById(R.id.align_left);
+        ImageButton right = (ImageButton) findViewById(R.id.align_right);
 
         center.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                knife.alignCenter(true);
+                knife.setAlignment(1);
             }
         });
 
         center.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                Toast.makeText(MainActivity.this, R.string.toast_bold, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "居中", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -144,14 +135,29 @@ public class MainActivity extends Activity {
         left.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                knife.alignCenter(false);
+                knife.setAlignment(0);
             }
         });
 
         left.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                Toast.makeText(MainActivity.this, R.string.toast_bold, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "居左", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+
+        right.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                knife.setAlignment(2);
+            }
+        });
+
+        right.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "居右", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -291,6 +297,52 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void setupTextColor() {
+        ImageButton textColor = (ImageButton) findViewById(R.id.text_color);
+
+        textColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (knife.getSelectionStart()<knife.getSelectionEnd()) {
+                    showColorPickerDialog(true);
+                }else {
+                    Toast.makeText(MainActivity.this,"请先选择文字",Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        textColor.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "设置文字颜色", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+    }
+
+    private void setupBackgroundColor() {
+        ImageButton backgroundColor = (ImageButton) findViewById(R.id.background_color);
+
+        backgroundColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (knife.getSelectionStart()<knife.getSelectionEnd()) {
+                    showColorPickerDialog(false);
+                }else {
+                    Toast.makeText(MainActivity.this,"请先选择文字",Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        backgroundColor.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "设置背景颜色", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+    }
+
     private void setupClear() {
         ImageButton clear = (ImageButton) findViewById(R.id.clear);
 
@@ -317,7 +369,6 @@ public class MainActivity extends Activity {
         insertImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                knife.clearFormats();
                 gallery();
             }
         });
@@ -325,7 +376,7 @@ public class MainActivity extends Activity {
         insertImage.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                Toast.makeText(MainActivity.this, "insert ic_insert_image", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "insert image", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -366,6 +417,131 @@ public class MainActivity extends Activity {
         builder.create().show();
     }
 
+    /**
+     * 显示颜色选择对话框
+     * @param isFore true：文字；false：背景
+     */
+    private void showColorPickerDialog(final boolean isFore) {
+
+        ColorPickerDialog.ColorPickerDialogListener listener = new ColorPickerDialog.ColorPickerDialogListener() {
+            @Override
+            public void onClick(View view) {
+                switch (view.getId()){
+                    case R.id.transparent:{
+                        if (isFore){
+                            knife.textColor(Color.WHITE);
+                        }else {
+                            knife.backgroundColor(Color.TRANSPARENT);
+                        }
+                        break;
+                    }
+                    case R.id.blue_grey:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.blue_grey));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.blue_grey));
+                        }
+                        break;
+                    }
+                    case R.id.black:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.black));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.black));
+                        }
+                        break;
+                    }
+                    case R.id.light_green:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.light_green));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.light_green));
+                        }
+                        break;
+                    }
+                    case R.id.green:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.green));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.green));
+                        }
+                        break;
+                    }
+                    case R.id.teal:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.teal));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.teal));
+                        }
+                        break;
+                    }
+                    case R.id.lime:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.lime));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.lime));
+                        }
+                        break;
+                    }
+                    case R.id.amber:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.amber));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.amber));
+                        }
+                        break;
+                    }
+                    case R.id.red:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.red));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.red));
+                        }
+                        break;
+                    }
+                    case R.id.blue:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.blue));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.blue));
+                        }
+                        break;
+                    }
+                    case R.id.indigo:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.indigo));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.indigo));
+                        }
+                        break;
+                    }
+                    case R.id.purple:{
+                        if (isFore){
+                            knife.textColor(getResources().getColor(R.color.purple));
+                        }else {
+                            knife.backgroundColor(getResources().getColor(R.color.purple));
+                        }
+                        break;
+                    }
+                }
+            }
+        };
+
+        ColorPickerDialog dialog = new ColorPickerDialog(this, listener);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCancelable(true);
+        View view = getLayoutInflater().inflate(R.layout.dialog_color_picker, null, false);
+        dialog.setContentView(view);
+        //TODO
+        if (isFore) {
+            dialog.setTitle("选择文字颜色");
+        }else {
+            dialog.setTitle("选择背景颜色");
+        }
+        dialog.show();
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_knowledge_editor, menu);
@@ -383,13 +559,9 @@ public class MainActivity extends Activity {
                 break;
             case R.id.view_html:
                 String preview = KnifeParser.toHtml(knife.getText());
-                Toast.makeText(this, preview,Toast.LENGTH_LONG).show();
                 Intent intent = new Intent(MainActivity.this,WebViewActivity.class);
                 intent.putExtra("preview",preview);
                 startActivity(intent);
-                break;
-            case R.id.view_html2:
-                Toast.makeText(this, Html.toHtml(knife.getText()),Toast.LENGTH_LONG).show();
                 break;
             default:
                 break;
@@ -403,9 +575,6 @@ public class MainActivity extends Activity {
      */
     public void gallery() {
         // 调用系统图库
-        // Intent getImg = new Intent(Intent.ACTION_GET_CONTENT);
-        // getImg.addCategory(Intent.CATEGORY_OPENABLE);
-        // getImg.setType("ic_insert_image/*");
         Intent getImg = new Intent(Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(getImg, 1001);
@@ -441,17 +610,14 @@ public class MainActivity extends Activity {
                                 originalUri.toString());
 
                         if (originalBitmap!= null) {
-                            knife.addImage(originalBitmap,fileName,"返回来的url");
+                            //TODO 这里可以做上传操作
+                            knife.addImage(originalBitmap,fileName,"上传服务器返回来的url");
                         } else {
                             Toast.makeText(this, "获取图片失败", Toast.LENGTH_LONG).show();
                         }
-
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }finally {
                     }
-
-
                     break;
                 }
             }
