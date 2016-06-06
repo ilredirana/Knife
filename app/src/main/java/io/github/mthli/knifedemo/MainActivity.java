@@ -31,7 +31,7 @@ import io.github.mthli.knife.KnifeText;
 
 public class MainActivity extends Activity {
 
-String EXAMPLE = "LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>LEFT<br><align_center>CENTER</align_center><align_right>RIGHT</align_right>";
+String EXAMPLE = "left<br><align_center>center</align_center><br><align_right>right</align_right><br><b>粗体</b><br><i>斜体</i><br><u>下划线</u><br><del>删除线</del><br><ul><li>列表1</li></ul><ul><li>列表2</li></ul><blockquote>引用段啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊</blockquote><big><big>大大</big></big>大<br>小<small><small>小小</small></small><br><font color =\"#3f51b5\">颜</font><font color =\"#f44336\">色</font><br><bgcolor_f44336><font color =\"#ffffff\">背</font></bgcolor_f44336><font color =\"#ffffff\"><bgcolor_009688>景</bgcolor_009688></font><br><br>";
     private KnifeText knife;
 
     @Override

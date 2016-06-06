@@ -192,6 +192,7 @@
         android:paddingRight="16dp"
         android:paddingEnd="16dp"
         android:gravity="top|start"
+        android:lineSpacingExtra="3dp"
         android:scrollbars="vertical"
         android:background="@android:color/transparent"
         app:bulletColor="@color/blue_500"

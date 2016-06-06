@@ -58,6 +58,7 @@ public class KnifeParser {
             next = text.nextSpanTransition(i, text.length(), ParagraphStyle.class);
 
             ParagraphStyle[] styles = text.getSpans(i, next, ParagraphStyle.class);
+            Log.e("STYLE_LENGTH",styles.length+"个");
             if (styles.length == 2) {
                 if (styles[0] instanceof BulletSpan && styles[1] instanceof QuoteSpan) {
                     // Let a <br> follow the BulletSpan or QuoteSpan end, so next++
@@ -69,9 +70,9 @@ public class KnifeParser {
                 }
             } else if (styles.length == 1) {
                 if (styles[0] instanceof BulletSpan) {
-                    withinBullet(out, text, i, next++);
+                    withinBullet(out, text, i, next);
                 } else if (styles[0] instanceof QuoteSpan) {
-                    withinQuote(out, text, i, next++);
+                    withinQuote(out, text, i, next);
                 }else if (styles[0] instanceof AlignmentSpan) {
                     withinAlignment(out, text, i, next);
                 }else {
